@@ -1,0 +1,56 @@
+# ===== 阿里云 Serverless Devs 配置 =====
+# 部署命令: s deploy
+# 前提: 已安装 Serverless Devs (npm install -g @serverless-devs/s) 并配置密钥
+
+edition: 3.0.0
+name: resume-analyzer
+access: default
+
+vars:
+  region: ${env.FC_REGION}
+
+resources:
+  default:
+    service:
+      name: ${env.FC_SERVICE_NAME}
+      description: 智能简历分析系统
+      internetAccess: true
+      nas: ''
+
+    function:
+      name: ${env.FC_FUNCTION_NAME}
+      description: AI 简历解析与评分 API
+      runtime: python3.9
+      codeUri: ../backend
+      handler: index.handler
+      timeout: 120
+      memorySize: 512
+      cpu: 0.5
+      diskSize: 512
+      environmentVariables:
+        AI_API_KEY: ${env.AI_API_KEY}
+        AI_BASE_URL: ${env.AI_BASE_URL}
+        AI_MODEL: ${env.AI_MODEL}
+        REDIS_HOST: ${env.REDIS_HOST}
+        REDIS_PORT: ${env.REDIS_PORT}
+        REDIS_PASSWORD: ${env.REDIS_PASSWORD}
+        CORS_ORIGINS: ${env.CORS_ORIGINS}
+
+    triggers:
+      - name: http-trigger
+        type: http
+        description: HTTP 触发器
+        config:
+          authType: anonymous
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+
+    customDomains:
+      - domainName: auto
+        protocol: HTTP
+        routeConfigs:
+          - path: /*
+            serviceName: ${env.FC_SERVICE_NAME}
+            functionName: ${env.FUNCTION_NAME}

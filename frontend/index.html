@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能简历分析系统 - Sidereus AI</title>
+<style>
+  /* ===== Reset & Variables ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #6366f1;
+    --primary-dark: #3730a3;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ===== Header ===== */
+  header {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    color: #fff;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+  header p { font-size: 0.9rem; opacity: 0.85; margin-top: 6px; }
+
+  /* ===== Layout ===== */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .badge {
+    font-size: 0.7rem;
+    background: var(--primary);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  /* ===== Forms ===== */
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--primary);
+    background: #eef2ff;
+  }
+  .file-drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .file-drop .icon { font-size: 2rem; margin-bottom: 8px; }
+  .file-drop .hint { font-size: 0.85rem; color: var(--text-secondary); }
+  .file-drop .filename { font-size: 0.9rem; font-weight: 500; color: var(--primary); margin-top: 8px; }
+
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 0.9rem;
+    resize: vertical;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font);
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-outline {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  .btn-outline:hover { background: #eef2ff; }
+  .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ===== Results ===== */
+  .result-section { margin-top: 16px; }
+  .result-section h4 { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+
+  .extracted-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .extracted-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+  }
+  .extracted-item .label { font-size: 0.75rem; color: var(--text-secondary); }
+  .extracted-item .value { font-size: 0.9rem; font-weight: 500; word-break: break-all; }
+
+  .score-display {
+    text-align: center;
+    padding: 20px;
+  }
+  .score-number {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .score-number.high { color: var(--success); }
+  .score-number.medium { color: var(--warning); }
+  .score-number.low { color: var(--error); }
+  .score-label { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+  .detail-list { margin-top: 16px; }
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .detail-item:last-child { border-bottom: none; }
+  .detail-item .dimension { font-weight: 500; }
+  .detail-item .detail-score { font-weight: 700; }
+  .detail-item .detail-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+  .bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+  }
+  .bar-fill.high { background: var(--success); }
+  .bar-fill.medium { background: var(--warning); }
+  .bar-fill.low { background: var(--error); }
+
+  /* ===== Loading ===== */
+  .loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== Error ===== */
+  .error-msg {
+    background: #fef2f2;
+    color: var(--error);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-top: 12px;
+    border: 1px solid #fecaca;
+  }
+
+  /* ===== History ===== */
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .h-name { font-weight: 500; }
+  .history-item .h-score { font-weight: 700; }
+
+  /* ===== Raw Text (collapsible) ===== */
+  .raw-text {
+    background: #1e293b;
+    color: #e2e8f0;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.8rem;
+    padding: 12px;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 8px;
+  }
+  details summary { cursor: pointer; font-size: 0.85rem; color: var(--primary); }
+
+  /* ===== Config ===== */
+  .config-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .config-row input {
+    flex: 1; padding: 6px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 0.85rem;
+  }
+  .empty-state {
+    text-align: center; padding: 24px; color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .content-box {
+    background: var(--bg); border-radius: 6px; padding: 12px;
+    font-size: 0.85rem; max-height: 200px; overflow: auto;
+    white-space: pre-wrap; word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📄 智能简历分析系统</h1>
+  <p>AI 赋能的简历解析 · 信息提取 · 岗位匹配度评分</p>
+</header>
+
+<div class="container">
+
+  <!-- ========== API Config ========== -->
+  <details class="card" style="padding:12px 24px;">
+    <summary style="font-size:0.85rem;color:var(--text-secondary);cursor:pointer;">
+      ⚙️ API 地址配置
+    </summary>
+    <div class="config-row" style="margin-top:8px;">
+      <input type="text" id="apiBase" value="http://localhost:8000/api/v1"
+             placeholder="API Base URL (e.g. https://fc-domain.com/api/v1)">
+      <button class="btn btn-outline" onclick="saveApiBase()" style="padding:6px 14px;">保存</button>
+    </div>
+  </details>
+
+  <!-- ========== Row 1: Upload + JD ========== -->
+  <div class="row">
+
+    <!-- Left: Upload -->
+    <div class="card">
+      <div class="card-title">📎 上传简历 <span class="badge">PDF</span></div>
+      <div class="file-drop" id="fileDrop">
+        <input type="file" accept=".pdf" id="fileInput">
+        <div class="icon">📄</div>
+        <div class="hint">点击或拖拽 PDF 文件到此处</div>
+        <div class="filename" id="fileName"></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="uploadResume()" id="uploadBtn">解析简历</button>
+      </div>
+      <div id="uploadResult"></div>
+    </div>
+
+    <!-- Right: JD Input -->
+    <div class="card">
+      <div class="card-title">📋 岗位描述 <span class="badge">JD</span></div>
+      <textarea id="jdText" placeholder="在此粘贴岗位需求描述（Job Description）…&#10;&#10;例如：&#10;岗位：Python 后端开发工程师&#10;要求：&#10;- 熟练掌握 Python 编程&#10;- 熟悉 FastAPI 或 Flask 框架&#10;- 了解 Redis、MySQL 等数据库&#10;- 本科及以上学历&#10;- 2 年以上工作经验"></textarea>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="matchResume()" id="matchBtn">开始评分</button>
+      </div>
+      <div id="matchResult"></div>
+    </div>
+
+  </div>
+
+  <!-- ========== History ========== -->
+  <div class="card">
+    <div class="card-title">📊 历史记录</div>
+    <div id="historyList"><div class="empty-state">暂无记录，上传简历后将自动记录</div></div>
+  </div>
+
+</div>
+
+<script>
+// ===== 保存 API Base URL =====
+const API_BASE_KEY = 'resume_api_base';
+
+function getApiBase() {
+  return localStorage.getItem(API_BASE_KEY) || document.getElementById('apiBase').value;
+}
+
+function saveApiBase() {
+  const val = document.getElementById('apiBase').value;
+  localStorage.setItem(API_BASE_KEY, val);
+  alert('API 地址已保存');
+}
+
+// Load saved API base
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(API_BASE_KEY);
+  if (saved) document.getElementById('apiBase').value = saved;
+});
+
+// ===== Drag & Drop =====
+const fileDrop = document.getElementById('fileDrop');
+const fileInput = document.getElementById('fileInput');
+
+fileDrop.addEventListener('dragover', (e) => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', (e) => {
+  e.preventDefault();
+  fileDrop.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    updateFileName();
+  }
+});
+fileInput.addEventListener('change', updateFileName);
+
+function updateFileName() {
+  const f = fileInput.files[0];
+  document.getElementById('fileName').textContent = f ? `📎 ${f.name} (${(f.size/1024).toFixed(1)} KB)` : '';
+}
+
+// ===== State =====
+let lastExtracted = null;  // reserved for future use
+
+// ===== Upload Resume =====
+async function uploadResume() {
+  const file = fileInput.files[0];
+  if (!file) { showError('uploadResult', '请先选择 PDF 文件'); return; }
+  if (!file.name.endsWith('.pdf')) { showError('uploadResult', '仅支持 PDF 格式'); return; }
+
+  const btn = document.getElementById('uploadBtn');
+  const resultDiv = document.getElementById('uploadResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在解析简历…</div>';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const resp = await fetch(`${getApiBase()}/upload`, { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError('uploadResult', data.error || `请求失败 (${resp.status})`);
+      btn.disabled = false;
+      return;
+    }
+
+    lastExtracted = data.extracted;
+
+    // Render result
+    resultDiv.innerHTML = renderUploadResult(data);
+    loadHistory();
+
+  } catch (err) {
+    showError('uploadResult', `网络错误: ${err.message}。请检查 API 地址是否正确。`);
+  }
+  btn.disabled = false;
+}
+
+function renderUploadResult(data) {
+  const ext = data.extracted || {};
+  const fields = [
+    { label: '姓名', value: ext.name },
+    { label: '电话', value: ext.phone },
+    { label: '邮箱', value: ext.email },
+    { label: '地址', value: ext.address },
+    { label: '求职意向', value: ext.job_intention },
+    { label: '期望薪资', value: ext.expected_salary },
+    { label: '工作年限', value: ext.work_years != null ? ext.work_years + ' 年' : null },
+    { label: '学历', value: ext.education },
+  ].filter(f => f.value != null && f.value !== '');
+
+  let skillsHtml = '';
+  if (ext.skills && ext.skills.length) {
+    skillsHtml = `<div class="extracted-item"><span class="label">技能</span><span class="value">${ext.skills.join('、')}</span></div>`;
+  }
+
+  let cacheTag = data.cached ? '<span style="font-size:0.75rem;color:var(--warning);margin-left:8px;">⚡ 缓存</span>' : '';
+
+  return `
+    <div class="result-section">
+      <h4>🔍 提取结果 ${cacheTag}</h4>
+      <div class="extracted-grid">
+        ${fields.map(f => `<div class="extracted-item"><span class="label">${f.label}</span><span class="value">${f.value || '-'}</span></div>`).join('')}
+        ${skillsHtml}
+      </div>
+      ${ext.project_experience ? `<div style="margin-top:8px;"><span style="font-size:0.75rem;color:var(--text-secondary);">项目经历</span><p style="font-size:0.85rem;">${ext.project_experience}</p></div>` : ''}
+      ${ext.schools && ext.schools.length ? `<div style="margin-top:6px;"><span style="font-size:0.75rem;color:var(--text-secondary);">毕业院校</span><span style="font-size:0.85rem;margin-left:8px;">${ext.schools.join('、')}</span></div>` : ''}
+      <details style="margin-top:12px;">
+        <summary>查看原始文本 (${data.text.length} 字符)</summary>
+        <div class="raw-text">${escapeHtml(data.text.slice(0, 2000))}${data.text.length > 2000 ? '…' : ''}</div>
+      </details>
+    </div>
+  `;
+}
+
+// ===== Match Resume =====
+async function matchResume() {
+  const jdText = document.getElementById('jdText').value.trim();
+  if (!jdText) { showError('matchResult', '请填写岗位描述'); return; }
+  if (!lastExtracted) { showError('matchResult', '请先上传并解析简历'); return; }
+
+  const btn = document.getElementById('matchBtn');
+  const resultDiv = document.getElementById('matchResult');
+  btn.disabled = true;
+  resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>正在计算匹配度…</div>';
+
+  try {
+    const resp = await fetch(`${getApiBase()}/match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resume_json: lastExtracted, jd_text: jdText }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError('matchResult', data.error || `请求失败 (${resp.status})`);
+      btn.disabled = false;
+      return;
+    }
+
+    resultDiv.innerHTML = renderMatchResult(data);
+    loadHistory();
+
+  } catch (err) {
+    showError('matchResult', `网络错误: ${err.message}`);
+  }
+  btn.disabled = false;
+}
+
+function renderMatchResult(data) {
+  const score = data.score;
+  const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low';
+  const scoreLabel = score >= 70 ? '🌟 高度匹配' : score >= 40 ? '📌 部分匹配' : '🔻 匹配度较低';
+
+  let cacheTag = data.cached ? '<span style="font-size:0.75rem;color:var(--warning);margin-left:8px;">⚡ 缓存</span>' : '';
+
+  const detailsHtml = (data.details || []).map(d => {
+    const barClass = d.score >= 70 ? 'high' : d.score >= 40 ? 'medium' : 'low';
+    return `
+      <div class="detail-item">
+        <div>
+          <div class="dimension">${d.dimension} <span style="font-weight:400;color:var(--text-secondary);font-size:0.8rem;">(${Math.round(d.weight*100)}%)</span></div>
+          <div class="detail-desc">${d.detail || ''}</div>
+          <div class="bar"><div class="bar-fill ${barClass}" style="width:${d.score}%"></div></div>
+        </div>
+        <div class="detail-score">${d.score}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="result-section">
+      <div class="score-display">
+        <div class="score-number ${scoreClass}">${score}</div>
+        <div class="score-label">${scoreLabel} ${cacheTag}</div>
+      </div>
+      ${data.details && data.details.length ? `
+        <h4>📊 评分明细</h4>
+        <div class="detail-list">${detailsHtml}</div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ===== History =====
+async function loadHistory() {
+  const div = document.getElementById('historyList');
+  try {
+    const resp = await fetch(`${getApiBase()}/history`);
+    const data = await resp.json();
+    if (!data.records || !data.records.length) {
+      div.innerHTML = '<div class="empty-state">暂无记录</div>';
+      return;
+    }
+    div.innerHTML = data.records.map(r => {
+      const time = new Date(r.timestamp * 1000).toLocaleString('zh-CN');
+      const scoreHtml = r.score != null ? `<span class="h-score" style="color:${r.score >= 70 ? 'var(--success)' : r.score >= 40 ? 'var(--warning)' : 'var(--error)'}">${r.score} 分</span>` : '<span style="color:var(--text-secondary)">待评分</span>';
+      return `<div class="history-item"><span><span class="h-name">${escapeHtml(r.resume_name || 'unknown')}</span><span style="color:var(--text-secondary);margin-left:8px;font-size:0.8rem;">${time}</span></span>${scoreHtml}</div>`;
+    }).join('');
+  } catch {
+    div.innerHTML = '<div class="empty-state">无法加载历史记录</div>';
+  }
+}
+
+// ===== Utilities =====
+function showError(targetId, msg) {
+  document.getElementById(targetId).innerHTML = `<div class="error-msg">❌ ${escapeHtml(msg)}</div>`;
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+// Auto-load history on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(loadHistory, 500);
+});
+</script>
+</body>
+</html>
