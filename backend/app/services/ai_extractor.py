@@ -26,10 +26,17 @@ _client: Optional[openai.OpenAI] = None
 def _get_client() -> openai.OpenAI:
     global _client
     if _client is None:
-        _client = openai.OpenAI(
+        kwargs = dict(
             api_key=settings.AI_API_KEY,
             base_url=settings.AI_BASE_URL,
         )
+        if settings.HTTP_PROXY:
+            try:
+                from openai import DefaultHttpxClient
+                kwargs["http_client"] = DefaultHttpxClient(proxy=settings.HTTP_PROXY)
+            except ImportError:
+                pass
+        _client = openai.OpenAI(**kwargs)
     return _client
 
 

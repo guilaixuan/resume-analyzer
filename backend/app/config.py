@@ -23,6 +23,9 @@ class Settings:
     FC_SERVICE_NAME: str = os.getenv("FC_SERVICE_NAME", "resume-analyzer")
     FC_FUNCTION_NAME: str = os.getenv("FC_FUNCTION_NAME", "resume-api")
 
+    # ── 代理 ──
+    HTTP_PROXY: Optional[str] = os.getenv("HTTP_PROXY") or os.getenv("http_proxy") or None
+
     # ── 服务 ──
     CACHE_TTL: int = 3600  # 缓存有效期 1 小时
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 最大上传 10 MB
@@ -31,7 +34,7 @@ class Settings:
     # ── CORS ──
     CORS_ORIGINS: list[str] = os.getenv(
         "CORS_ORIGINS",
-        "https://your-username.github.io,http://localhost:5500",
+        "https://guilaixuan.github.io,http://localhost:5500,http://localhost:8000",
     ).split(",")
 
 
