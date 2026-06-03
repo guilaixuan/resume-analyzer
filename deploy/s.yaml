@@ -1,4 +1,4 @@
-# ===== 阿里云 Serverless Devs 配置 =====
+# ===== 阿里云 Serverless Devs 配置（FC3 组件） =====
 # 部署命令: s deploy
 # 前提: 已安装 Serverless Devs (npm install -g @serverless-devs/s) 并配置密钥
 
@@ -7,50 +7,42 @@ name: resume-analyzer
 access: default
 
 vars:
-  region: ${env.FC_REGION}
+  region: ${env('FC_REGION', 'cn-hangzhou')}
 
 resources:
   default:
-    service:
-      name: ${env.FC_SERVICE_NAME}
-      description: 智能简历分析系统
+    component: fc3
+    props:
+      region: ${vars.region}
       internetAccess: true
-      nas: ''
 
-    function:
-      name: ${env.FC_FUNCTION_NAME}
+      serviceName: ${env('FC_SERVICE_NAME', 'resume-analyzer')}
+      functionName: ${env('FC_FUNCTION_NAME', 'resume-api')}
       description: AI 简历解析与评分 API
-      runtime: python3.9
-      codeUri: ../backend
-      handler: index.handler
-      timeout: 120
+      runtime: custom
+      code: ../backend
+      timeout: 300
       memorySize: 512
       cpu: 0.5
       diskSize: 512
       environmentVariables:
-        AI_API_KEY: ${env.AI_API_KEY}
-        AI_BASE_URL: ${env.AI_BASE_URL}
-        AI_MODEL: ${env.AI_MODEL}
-        REDIS_HOST: ${env.REDIS_HOST}
-        REDIS_PORT: ${env.REDIS_PORT}
-        REDIS_PASSWORD: ${env.REDIS_PASSWORD}
-        CORS_ORIGINS: ${env.CORS_ORIGINS}
+        AI_API_KEY: ${env('AI_API_KEY')}
+        AI_BASE_URL: ${env('AI_BASE_URL')}
+        AI_MODEL: ${env('AI_MODEL', 'deepseek-chat')}
+        REDIS_HOST: ${env('REDIS_HOST', '')}
+        REDIS_PORT: ${env('REDIS_PORT', '6379')}
+        REDIS_PASSWORD: ${env('REDIS_PASSWORD', '')}
+        CORS_ORIGINS: ${env('CORS_ORIGINS', 'https://guilaixuan.github.io')}
 
-    triggers:
-      - name: http-trigger
-        type: http
-        description: HTTP 触发器
-        config:
-          authType: anonymous
-          methods:
-            - GET
-            - POST
-            - OPTIONS
+      triggers:
+        - triggerName: http-trigger
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - OPTIONS
 
-    customDomains:
-      - domainName: auto
-        protocol: HTTP
-        routeConfigs:
-          - path: /*
-            serviceName: ${env.FC_SERVICE_NAME}
-            functionName: ${env.FUNCTION_NAME}
+      # customDomains 在 fc3 中通过 fc3-domain 组件单独配置
+      # 部署后可通过 FC 控制台绑定自定义域名

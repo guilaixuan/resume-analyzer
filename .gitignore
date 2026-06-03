@@ -8,6 +8,10 @@ venv/
 # Node.js (for MCP servers)
 node_modules/
 
+# Downloaded Linux wheels + portable Python for FC deployment
+backend/wheels/
+backend/portable_python/
+
 # Environment
 .env
 *.local
