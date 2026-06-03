@@ -75,7 +75,7 @@ pip install -r requirements.txt
 # Windows PowerShell
 $env:AI_API_KEY="sk-xxxxxxxx"
 $env:AI_BASE_URL="https://api.deepseek.com"
-$env:AI_MODEL="deepseek-chat"
+$env:AI_MODEL="deepseek-v4-flash"
 # 如果本地需要通过代理访问 API：
 $env:HTTP_PROXY="http://127.0.0.1:7897"
 ```
