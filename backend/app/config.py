@@ -10,7 +10,7 @@ class Settings:
     # ── AI API ──
     AI_API_KEY: str = os.getenv("AI_API_KEY", "sk-403e3fd6ca9944dc82f61e94f8e044bf")
     AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://api.deepseek.com")
-    AI_MODEL: str = os.getenv("AI_MODEL", "deepseek-chat")
+    AI_MODEL: str = os.getenv("AI_MODEL", "deepseek-v4-flash")
 
     # ── Redis ──
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")

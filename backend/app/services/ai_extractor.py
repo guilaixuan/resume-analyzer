@@ -108,6 +108,7 @@ def _call_ai(prompt: str, max_retries: int = 2) -> str:
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 max_tokens=2048,
+                timeout=60,
             )
             content = resp.choices[0].message.content or ""
             logger.info(

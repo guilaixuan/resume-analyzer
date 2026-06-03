@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from app.services.ai_extractor import analyze_jd
@@ -210,7 +211,6 @@ def _calc_experience_match(resume: dict[str, Any], jd: dict[str, Any]) -> dict[s
         }
 
     # 从 JD 描述中提取年限要求
-    import re
     year_matches = re.findall(r'(\d+)\s*[年以\-到至]+\s*(\d*)\s*年', exp_require)
     if not year_matches:
         year_matches = re.findall(r'(\d+)\s*年', exp_require)

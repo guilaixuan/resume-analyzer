@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # 阿里云 FC Custom Runtime 启动脚本
 # 使用便携式 Python 3.9 + 离线 wheel 包，彻底解决冷启动超时
 

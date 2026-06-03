@@ -34,6 +34,9 @@ class _RedisClient:
     def _connect(self) -> bool:
         if self._available:
             return True
+        if not settings.REDIS_HOST:
+            self._available = False
+            return False
         try:
             import redis as redis_lib
             self._client = redis_lib.Redis(

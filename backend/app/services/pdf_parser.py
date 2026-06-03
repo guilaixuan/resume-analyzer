@@ -1,9 +1,7 @@
 """
 PDF 简历解析模块
 
-双引擎设计：
-  主引擎 pdfplumber — 文本提取质量高
-  备用引擎 PyMuPDF  — 处理扫描件/复杂版式时兜底
+单引擎设计（pdfplumber）
 """
 
 from __future__ import annotations
@@ -56,27 +54,7 @@ def extract_text(file_stream: io.BytesIO) -> str:
         raw_text = "\n".join(pages_text)
     except Exception as e:
         errors.append(f"pdfplumber: {e}")
-        logger.warning("pdfplumber 解析失败，尝试 PyMuPDF: %s", e)
-
-    # ── 主引擎为空时，用备用引擎 PyMuPDF ──
-    if not raw_text.strip():
-        try:
-            import fitz  # PyMuPDF
-
-            file_stream.seek(0)
-            pdf_doc = fitz.open(stream=file_stream.read(), filetype="pdf")
-            pages_text = []
-            for page_num in range(len(pdf_doc)):
-                text = pdf_doc[page_num].get_text()
-                if text:
-                    pages_text.append(text)
-            pdf_doc.close()
-            raw_text = "\n".join(pages_text)
-            if raw_text.strip():
-                logger.info("PyMuPDF 备用引擎成功提取文本")
-        except Exception as e:
-            errors.append(f"PyMuPDF: {e}")
-            logger.error("PyMuPDF 也解析失败: %s", e)
+        logger.warning("pdfplumber 解析失败: %s", e)
 
     # ── 两个引擎都失败 ──
     if not raw_text.strip():
